@@ -7,9 +7,11 @@ import {
   TouchableOpacity,
   TextInput,
   ScrollView,
+  Alert,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { theme } from "./colors";
+import { Fontisto } from "@expo/vector-icons";
 
 const STORAGE_KEY = "@toDos";
 
@@ -26,32 +28,53 @@ export default function App() {
   };
 
   const saveToDos = async (toSave) => {
-    try {
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
-    } catch (e) {}
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
   };
 
   const loadToDos = async () => {
-    try {
-      const s = await AsyncStorage.getItem(STORAGE_KEY);
-      return s != null ? JSON.parse(s) : null;
-    } catch (e) {}
+    const s = await AsyncStorage.getItem(STORAGE_KEY);
+    s !== null ? setToDos(JSON.parse(s)) : null;
   };
 
   useEffect(() => {
     loadToDos();
-  }, {});
+  }, []);
   const addToDo = async () => {
     if (text === "") {
       return;
     }
 
-    const newToDos = { ...toDos, [Date.now()]: { text, working } };
+    const newToDos = {
+      ...toDos,
+      [Date.now()]: { text, working, complete: false },
+    };
     setToDos(newToDos);
     await saveToDos(newToDos);
     setText("");
   };
   console.log(toDos);
+
+  const deleteToDo = (key) => {
+    Alert.alert("Delete To Do?", "Are you sure?", [
+      { text: "cancel" },
+      {
+        text: "yes",
+        onPress: async () => {
+          const newToDos = { ...toDos };
+          delete newToDos[key];
+          setToDos(newToDos);
+          await saveToDos(newToDos);
+        },
+      },
+    ]);
+  };
+
+  const checkToDo = (key) => {
+    toDos[key].complete = !toDos[key].complete;
+    console.log(toDos);
+    console.log(toDos[key].complete);
+    saveToDos(toDos);
+  };
 
   return (
     <View style={styles.container}>
@@ -87,7 +110,21 @@ export default function App() {
         {Object.keys(toDos).map((key) =>
           toDos[key].working === working ? (
             <View style={styles.toDo} key={key}>
-              <Text style={styles.toDoText}>{toDos[key].text}</Text>
+              <Text style={{ ...styles.toDoText,  toDos[key].complete ?   : }}>{toDos[key].text}</Text>
+
+              <View style={styles.toDoOption}>
+                <TouchableOpacity onPress={() => deleteToDo(key)}>
+                  <Fontisto name="trash" size={18} color="white" />
+                </TouchableOpacity>
+
+                <TouchableOpacity onPress={() => checkToDo(key)}>
+                  {toDos[key].complete ? (
+                    <Fontisto name="checkbox-active" size={24} color="black" />
+                  ) : (
+                    <Fontisto name="checkbox-passive" size={24} color="black" />
+                  )}
+                </TouchableOpacity>
+              </View>
             </View>
           ) : null
         )}
@@ -125,10 +162,18 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     paddingHorizontal: 20,
     borderRadius: 15,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   toDoText: {
     color: "white",
     fontSize: 16,
     fontWeight: "bold",
+  },
+  toDoOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
 });
