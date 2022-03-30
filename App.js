@@ -1,7 +1,6 @@
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import {
-  StyleSheet,
   Text,
   View,
   TouchableOpacity,
@@ -9,12 +8,15 @@ import {
   ScrollView,
   Alert,
   Pressable,
+  Platform,
+  StyleSheet,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { theme } from "./colors";
 import { Fontisto } from "@expo/vector-icons";
 import BouncyCheckbox from "react-native-bouncy-checkbox";
 import { Entypo } from "@expo/vector-icons";
+
 const STORAGE_KEY = "@toDos";
 const WORK_KEY = "@working";
 
@@ -41,9 +43,13 @@ export default function App() {
     setText(payload);
   };
 
-  const onEditingText = (change) => {
+  const onEditingText = (change, key) => {
     setEditText(change);
-    console.log(change);
+
+    toDos[key].text = change;
+    setToDos(toDos);
+    saveToDos(toDos);
+    loadToDos(toDos);
   };
 
   const loadWorking = async () => {
@@ -53,12 +59,16 @@ export default function App() {
   };
 
   const saveToDos = async (toSave) => {
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+    try {
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+    } catch (e) {}
   };
 
   const loadToDos = async () => {
-    const s = await AsyncStorage.getItem(STORAGE_KEY);
-    s !== null ? setToDos(JSON.parse(s)) : null;
+    try {
+      const s = await AsyncStorage.getItem(STORAGE_KEY);
+      return s !== null ? setToDos(JSON.parse(s)) : null;
+    } catch (e) {}
   };
 
   useEffect(() => {
@@ -81,7 +91,7 @@ export default function App() {
   };
 
   const editToDo = async (key) => {
-    toDos[key].text = editText;
+    console.log("hello");
     toDos[key].change = false;
     setToDos(toDos);
     saveToDos(toDos);
@@ -89,18 +99,29 @@ export default function App() {
   };
 
   const deleteToDo = (key) => {
-    Alert.alert("Delete To Do?", "Are you sure?", [
-      { text: "cancel" },
-      {
-        text: "yes",
-        onPress: async () => {
-          const newToDos = { ...toDos };
-          delete newToDos[key];
-          setToDos(newToDos);
-          await saveToDos(newToDos);
+    if (Platform.OS === "web") {
+      const ok = confirm("Do you want to delete this To Do?");
+
+      if (ok) {
+        const newToDos = { ...toDos };
+        delete newToDos[key];
+        setToDos(newToDos);
+        saveToDos(newToDos);
+      }
+    } else {
+      Alert.alert("Delete To Do?", "Are you sure?", [
+        { text: "cancel" },
+        {
+          text: "yes",
+          onPress: () => {
+            const newToDos = { ...toDos };
+            delete newToDos[key];
+            setToDos(newToDos);
+            saveToDos(newToDos);
+          },
         },
-      },
-    ]);
+      ]);
+    }
   };
 
   const checkToDo = (key) => {
@@ -125,7 +146,11 @@ export default function App() {
       <View style={styles.header}>
         <TouchableOpacity onPress={work}>
           <Text
-            style={{ ...styles.btnText, color: working ? "white" : theme.gray }}
+            style={{
+              fontSize: 38,
+              fontWeight: "bold",
+              color: working ? "white" : theme.gray,
+            }}
           >
             Work
           </Text>
@@ -133,7 +158,8 @@ export default function App() {
         <TouchableOpacity onPress={travel}>
           <Text
             style={{
-              ...styles.btnText,
+              fontSize: 38,
+              fontWeight: "bold",
               color: !working ? "white" : theme.gray,
             }}
           >
@@ -166,9 +192,9 @@ export default function App() {
                 </Text>
               ) : (
                 <TextInput
-                  value={editText}
+                  value={toDos[key].text}
                   style={styles.changeToDo}
-                  onChangeText={onEditingText}
+                  onChangeText={(val) => onEditingText(val, key)}
                   onSubmitEditing={() => editToDo(key)}
                 />
               )}
@@ -182,7 +208,7 @@ export default function App() {
                   <Entypo name="pencil" size={24} color="white" />
                 </TouchableOpacity>
                 <BouncyCheckbox
-                  fillColor="#ffff"
+                  fillColor="red"
                   onPress={() => checkToDo(key)}
                 />
               </View>
@@ -205,10 +231,7 @@ const styles = StyleSheet.create({
     marginTop: 100,
     justifyContent: "space-between",
   },
-  btnText: {
-    fontSize: 38,
-    fontWeight: "bold",
-  },
+
   input: {
     backgroundColor: "white",
     paddingVertical: 15,
@@ -226,6 +249,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    flexWrap: "wrap",
   },
   toDoText: {
     color: "white",

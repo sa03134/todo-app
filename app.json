@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "WorkHardTravelHardApp",
-    "slug": "WorkHardTravelHardApp",
+    "slug": "workhardtravelhardapp",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -23,10 +23,13 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#FFFFFF"
-      }
+      },
+      "package": "com.sa03134.workhardtravelhardapp"
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "description": "",
+    "githubUrl": "https://github.com/sa03134/todo-app.git"
   }
 }
